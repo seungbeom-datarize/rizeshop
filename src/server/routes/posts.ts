@@ -1,18 +1,20 @@
 import { Hono } from 'hono';
+import { db } from '../../db';
+import { posts } from '../../db/schema';
 
 const app = new Hono()
-  .get('/', (c) => {
+  .get('/', async (c) => {
+    const result = await db.select().from(posts);
     return c.json({
-      posts: [
-        { id: 1, title: 'Hello Hono!' },
-        { id: 2, title: 'Next.js + Hono is awesome' },
-      ],
+      posts: result,
     });
   })
   .post('/', async (c) => {
     const { title } = await c.req.json<{ title: string }>();
+    const result = await db.insert(posts).values({ title }).returning();
     return c.json({
-      message: `Created post: ${title}`,
+      message: `Created post: ${result[0].title}`,
+      post: result[0],
     }, 201);
   });
 

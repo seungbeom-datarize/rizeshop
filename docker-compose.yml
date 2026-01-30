@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    container_name: rizeshop-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: datarize
+      POSTGRES_PASSWORD: datarize
+      POSTGRES_DB: rizeshop
+      TZ: UTC
+      LANG: C.UTF-8
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
