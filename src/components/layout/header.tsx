@@ -1,17 +1,33 @@
 'use client';
 
 import Link from 'next/link';
-import { ShoppingCart, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ShoppingCart, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { SearchBar } from './search-bar';
 import { MobileNav } from './mobile-nav';
 import { useCart } from '@/hooks/use-cart';
+import { useAuth } from '@/hooks/use-auth';
 import { getTopLevelCategories } from '@/data/categories';
 
 export function Header() {
+  const router = useRouter();
   const { itemCount } = useCart();
+  const { user, isAuthenticated, logout } = useAuth();
   const topCategories = getTopLevelCategories();
+
+  async function handleLogout() {
+    await logout();
+    router.push('/');
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -29,12 +45,37 @@ export function Header() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/my-account">
-                <User className="size-5" />
-                <span className="sr-only">마이페이지</span>
-              </Link>
-            </Button>
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <User className="size-5" />
+                    <span className="sr-only">내 계정</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <div className="px-2 py-1.5 text-sm font-medium">
+                    {user?.name || user?.email}
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/my-account">마이페이지</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 size-4" />
+                    로그아웃
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="ghost" size="icon" asChild>
+                <Link href="/login">
+                  <User className="size-5" />
+                  <span className="sr-only">로그인</span>
+                </Link>
+              </Button>
+            )}
             <Button variant="ghost" size="icon" className="relative" asChild>
               <Link href="/cart">
                 <ShoppingCart className="size-5" />

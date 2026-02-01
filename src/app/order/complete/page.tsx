@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
@@ -9,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatPrice } from '@/lib/format';
 
-export default function OrderCompletePage() {
+function OrderCompleteContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId') || 'RIZE-000000';
   const total = Number(searchParams.get('total')) || 0;
@@ -71,5 +72,13 @@ export default function OrderCompletePage() {
         </Button>
       </div>
     </div>
+  );
+}
+
+export default function OrderCompletePage() {
+  return (
+    <Suspense>
+      <OrderCompleteContent />
+    </Suspense>
   );
 }

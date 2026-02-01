@@ -55,6 +55,16 @@ export interface Coupon {
   expiresAt: string | null;
 }
 
+export interface User {
+  id: number;
+  email: string;
+  name: string | null;
+  phone: string | null;
+  role: 'user' | 'admin';
+  profileImage: string | null;
+  createdAt: string;
+}
+
 export interface CartItem {
   productId: number;
   variantId: number | null;

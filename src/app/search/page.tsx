@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { Suspense, useState, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
@@ -10,7 +10,7 @@ import { SortDropdown } from '@/components/filter/sort-dropdown';
 import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 import { searchProducts, getPopularProducts } from '@/data/products';
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
   const [sortBy, setSortBy] = useState('newest');
@@ -71,5 +71,13 @@ export default function SearchPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense>
+      <SearchContent />
+    </Suspense>
   );
 }

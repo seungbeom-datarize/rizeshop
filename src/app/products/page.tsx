@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { Suspense, useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import { products, getAllBrands } from '@/data/products';
 import { categories, getCategoryBySlug } from '@/data/categories';
 import { ITEMS_PER_PAGE } from '@/lib/constants';
 
-export default function ProductListPage() {
+function ProductListContent() {
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get('category');
   const initialSort = searchParams.get('sort') || 'newest';
@@ -221,5 +221,13 @@ export default function ProductListPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProductListPage() {
+  return (
+    <Suspense>
+      <ProductListContent />
+    </Suspense>
   );
 }
