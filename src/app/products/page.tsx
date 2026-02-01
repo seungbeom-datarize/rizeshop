@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,15 @@ export default function ProductListPage() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 4000000]);
   const [sortBy, setSortBy] = useState(initialSort);
   const [page, setPage] = useState(1);
+
+  // Sync state when URL search params change (e.g. header category navigation)
+  useEffect(() => {
+    const cat = searchParams.get('category');
+    setSelectedCategories(cat ? [cat] : []);
+    const sort = searchParams.get('sort');
+    if (sort) setSortBy(sort);
+    setPage(1);
+  }, [searchParams]);
 
   const allBrands = useMemo(() => getAllBrands(), []);
   const maxPrice = 4000000;
