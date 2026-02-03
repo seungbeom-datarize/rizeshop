@@ -12,10 +12,14 @@ import { TermsCheckboxes } from '@/components/checkout/terms-checkboxes';
 import { CouponInput } from '@/components/cart/coupon-input';
 import { EmptyCart } from '@/components/cart/empty-cart';
 import { useCart } from '@/hooks/use-cart';
+import client from '@/lib/client';
+import { useToast } from '@/hooks/use-toast';
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, clearCart, getTotal } = useCart();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [shipping, setShipping] = useState({
     recipientName: '',
@@ -41,11 +45,57 @@ export default function CheckoutPage() {
     shipping.address.trim() !== '' &&
     allTermsAccepted;
 
-  function handlePlaceOrder() {
-    const orderId = `RIZE-${Date.now()}`;
-    const total = getTotal();
-    clearCart();
-    router.push(`/order/complete?orderId=${orderId}&total=${total}`);
+  async function handlePlaceOrder() {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      const orderData = {
+        items: items.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId || undefined,
+          quantity: item.quantity,
+          price: item.variant?.additionalPrice
+            ? item.product.price + item.variant.additionalPrice
+            : item.product.price,
+        })),
+        shippingAddress: {
+          recipientName: shipping.recipientName,
+          phone: shipping.phone,
+          postalCode: shipping.postalCode,
+          address: shipping.address,
+          addressDetail: shipping.addressDetail || undefined,
+        },
+        paymentMethod,
+        deliveryNotes: shipping.deliveryNotes || undefined,
+        totalAmount: getTotal(),
+      };
+
+      console.log('Order data:', orderData);
+
+      const res = await client.api.orders.$post({
+        json: orderData,
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        console.error('Order API error:', error);
+        throw new Error(error.error || '주문에 실패했습니다.');
+      }
+
+      const { order } = await res.json();
+      clearCart();
+      router.push(`/order/complete?orderId=${order.id}&total=${order.totalAmount}`);
+    } catch (error: any) {
+      console.error('Order error:', error);
+      toast({
+        title: '주문 실패',
+        description: error.message || '주문 중 오류가 발생했습니다.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   if (items.length === 0) {
@@ -79,9 +129,9 @@ export default function CheckoutPage() {
             className="w-full"
             size="lg"
             onClick={handlePlaceOrder}
-            disabled={!isFormValid}
+            disabled={!isFormValid || isSubmitting}
           >
-            주문하기
+            {isSubmitting ? '주문 처리 중...' : '주문하기'}
           </Button>
           {!allTermsAccepted && (
             <p className="text-center text-xs text-muted-foreground">

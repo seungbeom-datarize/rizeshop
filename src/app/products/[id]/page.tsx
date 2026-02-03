@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useParams, useRouter, notFound } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { ShoppingCart, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -14,11 +14,12 @@ import { VariantSelector } from '@/components/product/variant-selector';
 import { QuantitySelector } from '@/components/product/quantity-selector';
 import { ProductReviews } from '@/components/product/product-reviews';
 import { RelatedProducts } from '@/components/product/related-products';
-import { getProductById, getVariantsByProductId } from '@/data/products';
 import { getReviewsByProductId } from '@/data/reviews';
 import { getCategoryById } from '@/data/categories';
 import { useCart } from '@/hooks/use-cart';
 import { formatPrice } from '@/lib/format';
+import client from '@/lib/client';
+import type { Product, ProductVariant } from '@/types';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -26,18 +27,47 @@ export default function ProductDetailPage() {
   const { addItem } = useCart();
   const productId = Number(params.id);
 
-  const maybeProduct = useMemo(() => getProductById(productId), [productId]);
-
+  const [product, setProduct] = useState<Product | null>(null);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
 
-  if (!maybeProduct) {
-    notFound();
-    throw new Error('Product not found');
+  useEffect(() => {
+    async function fetchProduct() {
+      try {
+        const res = await (client.api.products[':id'] as any).$get({
+          param: { id: productId.toString() },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setProduct(data.product);
+          setVariants(data.variants || []);
+        } else {
+          router.push('/products');
+        }
+      } catch (error) {
+        console.error('Failed to fetch product:', error);
+        router.push('/products');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchProduct();
+  }, [productId, router]);
+
+  if (isLoading) {
+    return (
+      <div className="py-20 text-center text-muted-foreground">로딩 중...</div>
+    );
   }
 
-  const product = maybeProduct;
-  const variants = getVariantsByProductId(productId);
+  if (!product) {
+    return null;
+  }
+
   const reviews = getReviewsByProductId(productId);
   const category = getCategoryById(product.categoryId);
 
@@ -55,6 +85,7 @@ export default function ProductDetailPage() {
   }
 
   function handleAddToCart() {
+    if (!product) return;
     const variant = getSelectedVariant();
     addItem(product, variant, quantity);
     toast.success('장바구니에 추가되었습니다', {
@@ -63,12 +94,15 @@ export default function ProductDetailPage() {
   }
 
   function handleBuyNow() {
+    if (!product) return;
     const variant = getSelectedVariant();
     addItem(product, variant, quantity);
     router.push('/checkout');
   }
 
-  const totalPrice = (product.price + (getSelectedVariant()?.additionalPrice ?? 0)) * quantity;
+  const totalPrice = product
+    ? (product.price + (getSelectedVariant()?.additionalPrice ?? 0)) * quantity
+    : 0;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">

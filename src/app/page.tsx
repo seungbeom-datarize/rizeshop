@@ -1,18 +1,54 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import { ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { ProductGrid } from '@/components/product/product-grid';
-import { getNewArrivals, getPopularProducts } from '@/data/products';
-import { getTopLevelCategories } from '@/data/categories';
-import { banners } from '@/data/banners';
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ProductGrid } from "@/components/product/product-grid";
+import { getTopLevelCategories } from "@/data/categories";
+import { banners } from "@/data/banners";
+import client from "@/lib/client";
+import type { Product } from "@/types";
 
 export default function HomePage() {
-  const newArrivals = getNewArrivals(8);
-  const popularProducts = getPopularProducts(8);
+  const [newArrivals, setNewArrivals] = useState<Product[]>([]);
+  const [popularProducts, setPopularProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const topCategories = getTopLevelCategories();
+
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const [newRes, popularRes] = await Promise.all([
+          client.api.products.featured["new-arrivals"].$get({
+            query: { limit: "8" },
+          }),
+          client.api.products.featured.popular.$get({
+            query: { limit: "8" },
+          }),
+        ]);
+
+        if (newRes.ok) {
+          const data = await newRes.json();
+          setNewArrivals(data.products as Product[]);
+        }
+
+        if (popularRes.ok) {
+          const data = await popularRes.json();
+          setPopularProducts(data.products as Product[]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchProducts();
+  }, []);
 
   return (
     <div>
@@ -69,7 +105,13 @@ export default function HomePage() {
               </Link>
             </Button>
           </div>
-          <ProductGrid products={newArrivals} showCategory />
+          {isLoading ? (
+            <div className="py-20 text-center text-muted-foreground">
+              로딩 중...
+            </div>
+          ) : (
+            <ProductGrid products={newArrivals} showCategory />
+          )}
         </section>
 
         <Separator className="my-10" />
@@ -84,7 +126,13 @@ export default function HomePage() {
               </Link>
             </Button>
           </div>
-          <ProductGrid products={popularProducts} showCategory />
+          {isLoading ? (
+            <div className="py-20 text-center text-muted-foreground">
+              로딩 중...
+            </div>
+          ) : (
+            <ProductGrid products={popularProducts} showCategory />
+          )}
         </section>
 
         {/* Promo Banner */}

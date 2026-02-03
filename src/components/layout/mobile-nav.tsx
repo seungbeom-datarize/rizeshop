@@ -11,10 +11,10 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
-import { getTopLevelCategories, getSubcategories } from '@/data/categories';
+import { getTopLevelCategories } from '@/data/categories';
 
 export function MobileNav() {
-  const topCategories = getTopLevelCategories();
+  const categories = getTopLevelCategories();
 
   return (
     <Sheet>
@@ -40,32 +40,15 @@ export function MobileNav() {
             전체 상품
           </Link>
           <Separator className="my-2" />
-          {topCategories.map((cat) => {
-            const subs = getSubcategories(cat.id);
-            return (
-              <div key={cat.id}>
-                <Link
-                  href={`/products?category=${cat.slug}`}
-                  className="rounded-md px-3 py-2 text-sm font-medium hover:bg-accent block"
-                >
-                  {cat.name}
-                </Link>
-                {subs.length > 0 && (
-                  <div className="ml-4 flex flex-col gap-1">
-                    {subs.map((sub) => (
-                      <Link
-                        key={sub.id}
-                        href={`/products?category=${sub.slug}`}
-                        className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground block"
-                      >
-                        {sub.name}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {categories.map((cat) => (
+            <Link
+              key={cat.id}
+              href={`/products?category=${cat.slug}`}
+              className="rounded-md px-3 py-2 text-sm font-medium hover:bg-accent block"
+            >
+              {cat.name}
+            </Link>
+          ))}
         </nav>
       </SheetContent>
     </Sheet>

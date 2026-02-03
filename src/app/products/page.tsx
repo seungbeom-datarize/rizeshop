@@ -10,36 +10,96 @@ import { ProductGrid } from '@/components/product/product-grid';
 import { FilterSidebar } from '@/components/filter/filter-sidebar';
 import { ActiveFilters } from '@/components/filter/active-filters';
 import { SortDropdown } from '@/components/filter/sort-dropdown';
-import { products, getAllBrands } from '@/data/products';
 import { categories, getCategoryBySlug } from '@/data/categories';
 import { ITEMS_PER_PAGE } from '@/lib/constants';
+import client from '@/lib/client';
+import type { Product } from '@/types';
 
 function ProductListContent() {
   const searchParams = useSearchParams();
-  const initialCategory = searchParams.get('category');
-  const initialSort = searchParams.get('sort') || 'newest';
+  const categoryParam = searchParams.get('category');
+  const sortParam = searchParams.get('sort');
 
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(
-    initialCategory ? [initialCategory] : [],
-  );
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 4000000]);
-  const [sortBy, setSortBy] = useState(initialSort);
+  const [sortBy, setSortBy] = useState('newest');
   const [page, setPage] = useState(1);
 
-  // Sync state when URL search params change (e.g. header category navigation)
+  // Fetch products when component mounts or category changes
   useEffect(() => {
-    const cat = searchParams.get('category');
-    setSelectedCategories(cat ? [cat] : []);
-    const sort = searchParams.get('sort');
-    if (sort) setSortBy(sort);
-    setPage(1);
-  }, [searchParams]);
+    let cancelled = false;
 
-  const allBrands = useMemo(() => getAllBrands(), []);
+    async function fetchProducts() {
+      setIsLoading(true);
+      try {
+        const categoryData = categoryParam
+          ? getCategoryBySlug(categoryParam)
+          : null;
+
+        const query: any = {};
+        if (categoryData) {
+          query.categoryId = categoryData.id.toString();
+        }
+
+        console.log('Fetching products:', { categoryParam, query });
+
+        const res = await client.api.products.$get({ query });
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          console.log('Products loaded:', {
+            category: categoryParam,
+            count: data.products.length,
+          });
+          setProducts(data.products as Product[]);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to fetch products:', error);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    fetchProducts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [categoryParam]);
+
+  // Sync filter state when URL search params change
+  useEffect(() => {
+    setSelectedCategories(categoryParam ? [categoryParam] : []);
+    setSortBy(sortParam || 'newest');
+    setSelectedBrands([]);
+    setPriceRange([0, 4000000]);
+    setPage(1);
+  }, [categoryParam, sortParam]);
+
+  const allBrands = useMemo(() => {
+    const brands = new Set<string>();
+    products.forEach((p) => {
+      if (p.brand) brands.add(p.brand);
+    });
+    return Array.from(brands).sort();
+  }, [products]);
+
   const maxPrice = 4000000;
 
   const filteredProducts = useMemo(() => {
+    console.log('Filtering products:', {
+      totalProducts: products.length,
+      selectedCategories,
+      selectedBrands,
+      priceRange,
+    });
+
     let result = [...products];
 
     // Filter by category
@@ -48,14 +108,9 @@ function ProductListContent() {
         .map((slug) => getCategoryBySlug(slug))
         .filter(Boolean)
         .map((c) => c!.id);
-      // Include subcategories
-      const allCatIds = new Set(catIds);
-      categories.forEach((cat) => {
-        if (cat.parentId && allCatIds.has(cat.parentId)) {
-          allCatIds.add(cat.id);
-        }
-      });
-      result = result.filter((p) => allCatIds.has(p.categoryId));
+
+      console.log('Category filter:', { selectedCategories, catIds });
+      result = result.filter((p) => catIds.includes(p.categoryId));
     }
 
     // Filter by brand
@@ -83,7 +138,7 @@ function ProductListContent() {
     }
 
     return result;
-  }, [selectedCategories, selectedBrands, priceRange, sortBy]);
+  }, [products, selectedCategories, selectedBrands, priceRange, sortBy]);
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = filteredProducts.slice(
@@ -171,20 +226,34 @@ function ProductListContent() {
 
         {/* Main content */}
         <div className="flex-1">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="text-sm text-muted-foreground">{filteredProducts.length}개 상품</p>
-              <ActiveFilters filters={activeFilters} onRemove={handleRemoveFilter} onClearAll={clearAll} />
-            </div>
-            <SortDropdown value={sortBy} onChange={setSortBy} />
-          </div>
-
-          {paginatedProducts.length === 0 ? (
+          {isLoading ? (
             <div className="py-20 text-center text-muted-foreground">
-              조건에 맞는 상품이 없습니다.
+              로딩 중...
             </div>
           ) : (
-            <ProductGrid products={paginatedProducts} />
+            <>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="text-sm text-muted-foreground">
+                    {filteredProducts.length}개 상품
+                  </p>
+                  <ActiveFilters
+                    filters={activeFilters}
+                    onRemove={handleRemoveFilter}
+                    onClearAll={clearAll}
+                  />
+                </div>
+                <SortDropdown value={sortBy} onChange={setSortBy} />
+              </div>
+
+              {paginatedProducts.length === 0 ? (
+                <div className="py-20 text-center text-muted-foreground">
+                  조건에 맞는 상품이 없습니다.
+                </div>
+              ) : (
+                <ProductGrid products={paginatedProducts} />
+              )}
+            </>
           )}
 
           {/* Pagination */}
