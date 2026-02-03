@@ -17,9 +17,9 @@ import { formatDate } from '@/lib/format';
 
 const quickLinks = [
   { href: '/my-account/edit', icon: UserPen, label: '프로필 수정' },
-  { href: '#', icon: Package, label: '주문 내역' },
-  { href: '#', icon: Ticket, label: '쿠폰' },
-  { href: '#', icon: MapPin, label: '배송지 관리' },
+  { href: '/my-account/orders', icon: Package, label: '주문 내역' },
+  { href: '/my-account/coupons', icon: Ticket, label: '쿠폰' },
+  { href: '/my-account/addresses', icon: MapPin, label: '배송지 관리' },
 ];
 
 export default function MyAccountPage() {
