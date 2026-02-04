@@ -21,7 +21,7 @@ export function ProductCard({ product, showCategory }: ProductCardProps) {
   return (
     <Card className="group overflow-hidden transition-shadow hover:shadow-md">
       <Link href={`/products/${product.id}`}>
-        <div className="relative aspect-square overflow-hidden bg-muted">
+      <Link href={`/products/${product.id}`} data-dtr-track={product.id}>
           <Image
             src={product.images[0]}
             alt={product.name}
@@ -43,7 +43,7 @@ export function ProductCard({ product, showCategory }: ProductCardProps) {
           </Badge>
         )}
         <Link href={`/products/${product.id}`}>
-          <h3 className="line-clamp-2 text-sm font-medium leading-tight hover:underline">
+        <Link href={`/products/${product.id}`} data-dtr-track={product.id}>
             {product.name}
           </h3>
         </Link>
