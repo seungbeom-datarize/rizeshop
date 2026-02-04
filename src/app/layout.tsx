@@ -5,6 +5,7 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { CartProvider } from '@/contexts/cart-context';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
+import Script from 'next/script';
 import './globals.css';
 
 const geistSans = Geist({
@@ -39,6 +40,18 @@ export default function RootLayout({
               <main className="flex-1">{children}</main>
               <Footer />
             </div>
+        <Script
+          id="datarize-sdk"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(d,s,i) {
+                var se = d.createElement(s);se.type='text/javascript';se.async=true;se.src='https://cdn.datarize.io/logger/genesis.'+i+'.min.js';
+                var x = d.getElementsByTagName(s)[0];x.parentNode.insertBefore(se,x);
+              })(document, 'script', '14286');
+            `
+          }}
+        />
             <Toaster />
           </CartProvider>
         </AuthProvider>
