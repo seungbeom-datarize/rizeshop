@@ -7,7 +7,7 @@ const connectionString = process.env.DATABASE_URL!;
 // Disable prefetch as it is not supported for "Transaction" pool mode
 const client = postgres(connectionString, {
   prepare: false,
-  ssl: 'require',
+  ssl: process.env.DB_SSL === 'false' ? false : 'require',
   max: 1, // Limit connections for serverless
 });
 export const db = drizzle(client, { schema });

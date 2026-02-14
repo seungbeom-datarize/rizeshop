@@ -1,16 +1,18 @@
 import { config } from "dotenv";
-import { db } from "../src/db";
-import { categories, products, product_variants } from "../src/db/schema";
+
+// Load .env.local file BEFORE importing db
+config({ path: ".env.local" });
+
 import { categories as categoriesData } from "../src/data/categories";
 import {
   products as productsData,
   productVariants,
 } from "../src/data/products";
 
-// Load .env.local file
-config({ path: ".env.local" });
-
 async function seedProducts() {
+  const { db } = await import("../src/db");
+  const { categories, products, product_variants } = await import("../src/db/schema");
+
   try {
     console.log("Starting product seed...");
 
