@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/contexts/auth-context';
@@ -29,6 +30,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
+      <head>
+        <Script id="datarize-sdk" strategy="beforeInteractive">
+          {`(function(d,s,i) {
+            var se = d.createElement(s);se.type='text/javascript';se.async=true;se.src='https://cdn.datarize.io/logger/genesis.'+i+'.min.js';
+            var x = d.getElementsByTagName(s)[0];x.parentNode.insertBefore(se,x);
+          })(document, 'script', '14286');`}
+        </Script>
+        <meta name="user_id" content="{{userId}}" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
